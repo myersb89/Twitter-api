@@ -1,0 +1,14 @@
+https://developer.twitter.com/en/docs/twitter-api/enterprise/decahose-api/guides/recovery-and-redundancy
+https://developer.twitter.com/en/docs/tutorials/consuming-streaming-data
+
+Streaming connection
+
+
+Main loop:
+- connect to the stream
+- read lines
+- parse
+    - is tweet
+        dump to datastore
+    - is command
+    - is disconnect

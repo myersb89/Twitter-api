@@ -12,3 +12,18 @@ Main loop:
         dump to datastore
     - is command
     - is disconnect
+
+
+Considerations
+* Streaming part
+    - redundancy
+    - monitoring and observability
+        * Log something maybe
+        * increment a metric when tweet received
+        * monitor and alert on disconnects/reconnect
+* Data processing?
+    - maybe a queuing solution to be able to scale the processing nodes
+* Datastore
+    - SQL vs NoSQL - kinda depends on what the downstream application is goign to do with the data. 
+        Maybe leaning towards nosql
+    - maybe elasticsearch?

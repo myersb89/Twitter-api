@@ -3,6 +3,8 @@ import os
 import json
 import psycopg2
 import tweepy
+import boto3
+import botocore
 
 class TweetPrinter(tweepy.StreamingClient):
     def on_tweet(self, tweet):
@@ -77,6 +79,39 @@ def get_tweets_sql(connection):
         print(tweet)
     cur.close()
 
+def create_table_dynamo(ddb):
+    try:
+        ddb.describe_table(TableName='tweets')
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "ResourceNotFoundException":
+            print("Creating DynamoDB Table")
+            ddb.create_table(TableName='tweets',
+                             AttributeDefinitions=[{
+                                    'AttributeName': 'tweet_id',
+                                    'AttributeType': 'N'
+                                }],
+                                KeySchema=[{
+                                    'AttributeName': 'tweet_id',
+                                    'KeyType': 'HASH'
+                                }],
+                                ProvisionedThroughput={
+                                'ReadCapacityUnits': 5,
+                                'WriteCapacityUnits': 5
+                            })
+
+def insert_tweet_dynamo(ddb,tweet):
+    ddb.put_item(TableName='tweets',
+                 Item={
+                    'tweet_id': {'N': str(tweet.id)},
+                    'tweet_text': {'S': str(tweet.text)}
+                })
+
+def get_tweets_dynamo(ddb):
+    response = ddb.scan(TableName='tweets')
+    for item in response['Items']:
+        print(item)
+
+
 if __name__ == "__main__":
     username = "BryanJMyers1"
     #get_user_tweets_native(username)
@@ -84,11 +119,18 @@ if __name__ == "__main__":
     print(tweets)
 
     # Save to Postgres
-    conn = psycopg2.connect("dbname=twitter_data user=postgres password=test1234")
-    create_tables(conn)
+    #conn = psycopg2.connect("dbname=twitter_data user=postgres password=test1234")
+    #create_tables(conn)
+    #for tweet in tweets:
+    #    insert_tweet_sql(conn,tweet)
+    #get_tweets_sql(conn)
+    #conn.close()
+
+    # Save to DynamoDB
+    ddb = boto3.client("dynamodb", endpoint_url="http://localhost:8000", region_name="us-west-2")
+    create_table_dynamo(ddb)
     for tweet in tweets:
-        insert_tweet_sql(conn,tweet)
-    get_tweets_sql(conn)
-    conn.close()
+        insert_tweet_dynamo(ddb,tweet)
+    get_tweets_dynamo(ddb)
 
     #stream_tweets()
